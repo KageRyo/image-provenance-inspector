@@ -1,5 +1,9 @@
 # Image Provenance Inspector
 
+[![CI](https://github.com/KageRyo/image-provenance-inspector/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/KageRyo/image-provenance-inspector/actions/workflows/ci.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+
 Image Provenance Inspector is an open-source tool for inspecting image metadata, C2PA Content Credentials, and editing provenance. It turns the evidence available inside an image into a small, human-readable report without collapsing uncertain origin and editing signals into one overconfident label.
 
 It is designed to answer:
@@ -178,24 +182,8 @@ The project also exposes a CLI using the same service and Pydantic result model:
 uv run image-provenance-inspector photo.jpg
 ```
 
-## Release and PyPI
-
-GitHub Releases are built and published by
-[`.github/workflows/publish.yml`](.github/workflows/publish.yml). The workflow
-uses PyPI Trusted Publishing through GitHub Actions OIDC, so no long-lived
-PyPI token is stored in the repository.
-
-Before the first release, register a pending publisher at
-<https://pypi.org/manage/account/publishing/> with:
-
-- PyPI project name: `image-provenance-inspector`
-- GitHub owner: `KageRyo`
-- GitHub repository: `image-provenance-inspector`
-- Workflow filename: `publish.yml`
-- GitHub environment: `pypi`
-
-After that one-time setup, publishing a GitHub Release builds the wheel and
-source distribution and uploads both to PyPI.
+For contribution and maintainer workflows, see
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Project layout
 
@@ -223,6 +211,21 @@ This project inspects, validates, explains, and compares evidence. It deliberate
 - infer provenance from pixels alone.
 
 Uploaded content may contain sensitive metadata such as GPS coordinates. Run the service locally or review and sanitize metadata before sending images to a hosted deployment.
+
+## Responsible use
+
+Use this project only with images and metadata that you are authorized to
+inspect. Do not use it to facilitate unlawful activity, privacy violations,
+fraud, copyright infringement, or attempts to evade platform safeguards.
+
+If an image is AI-generated or AI-edited, follow the applicable laws, license
+terms, disclosure requirements, and content policies of the platform where it
+is published. Do not remove, falsify, or bypass C2PA credentials, labels,
+watermarks, or other provenance signals.
+
+This project provides technical evidence, not a legal determination. You are
+responsible for obtaining the rights and permissions needed for image use and
+for complying with applicable laws and platform policies.
 
 ## License
 
