@@ -178,6 +178,25 @@ The project also exposes a CLI using the same service and Pydantic result model:
 uv run image-provenance-inspector photo.jpg
 ```
 
+## Release and PyPI
+
+GitHub Releases are built and published by
+[`.github/workflows/publish.yml`](.github/workflows/publish.yml). The workflow
+uses PyPI Trusted Publishing through GitHub Actions OIDC, so no long-lived
+PyPI token is stored in the repository.
+
+Before the first release, register a pending publisher at
+<https://pypi.org/manage/account/publishing/> with:
+
+- PyPI project name: `image-provenance-inspector`
+- GitHub owner: `KageRyo`
+- GitHub repository: `image-provenance-inspector`
+- Workflow filename: `publish.yml`
+- GitHub environment: `pypi`
+
+After that one-time setup, publishing a GitHub Release builds the wheel and
+source distribution and uploads both to PyPI.
+
 ## Project layout
 
 ```text
