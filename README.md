@@ -1,6 +1,6 @@
 # Image Provenance Inspector
 
-Image Provenance Inspector is an open-source tool for inspecting image metadata, C2PA Content Credentials, and editing provenance. It turns the evidence available inside an image into a small, human-readable report that can distinguish camera-origin evidence, traditional editing, AI-assisted editing, and AI-generation signals.
+Image Provenance Inspector is an open-source tool for inspecting image metadata, C2PA Content Credentials, and editing provenance. It turns the evidence available inside an image into a small, human-readable report without collapsing uncertain origin and editing signals into one overconfident label.
 
 It is designed to answer:
 
@@ -16,17 +16,14 @@ It is not an AI detector and it does not try to defeat platform labels. A missin
 - SHA-256, dimensions, format, and file size
 - Optional original-versus-edited comparison using SSIM, perceptual hash, and a difference mask
 
-The rule-based assessment uses five intentionally conservative categories:
+The rule-based assessment reports two independent dimensions:
 
-| Category | Meaning |
-| --- | --- |
-| `CAMERA_ORIGINAL` | Camera-origin metadata is present and no editing evidence was found. |
-| `TRADITIONAL_EDIT` | Camera-origin metadata and conventional editing provenance were found. |
-| `AI_ASSISTED_EDIT` | Camera-origin evidence and AI/generative editing evidence were found. |
-| `AI_GENERATED` | AI-generation evidence was found without camera-origin evidence. |
-| `UNKNOWN` | Available metadata does not support a stronger conclusion. |
+| Dimension | Values | Meaning |
+| --- | --- | --- |
+| `origin` | `CAMERA_CAPTURED`, `SYNTHETIC`, `UNKNOWN` | Evidence about where the asset may have originated. |
+| `editing` | `NONE_DETECTED`, `TRADITIONAL`, `GENERATIVE`, `UNKNOWN` | Evidence about editing actions retained in the asset. |
 
-These categories describe evidence, not certainty. Provenance can be stripped, lost during export, or incomplete.
+Camera metadata is reported as medium-confidence `CAMERA_CAPTURED` evidence, not as proof that pixels are untouched. A generative action without a known generator remains `origin=UNKNOWN`, because a real source image may have lost its camera metadata. These values describe evidence, not certainty; provenance can be stripped, lost during export, or incomplete.
 
 ## Quick start
 
@@ -91,17 +88,27 @@ The response is a fixed Pydantic-validated JSON contract:
   "c2pa": {
     "present": true,
     "valid": true,
-    "claim_generator": "Adobe Photoshop",
+    "claim_generator": "Adobe Photoshop Generative Fill",
+    "actions": ["c2pa.edited"],
     "generative_edit": true
   },
   "assessment": {
-    "type": "AI_ASSISTED_EDIT",
-    "confidence": "high",
-    "reason": [
-      "Camera capture metadata detected",
-      "C2PA provenance detected",
-      "Generative editing action detected"
-    ]
+    "origin": {
+      "type": "CAMERA_CAPTURED",
+      "confidence": "medium",
+      "reason": [
+        "Camera capture metadata detected",
+        "Metadata can be copied, rewritten, or retained after editing"
+      ]
+    },
+    "editing": {
+      "type": "GENERATIVE",
+      "confidence": "high",
+      "reason": [
+        "Generative editing or AI provenance evidence detected",
+        "C2PA generative action detected"
+      ]
+    }
   }
 }
 ```
@@ -130,6 +137,15 @@ All validation and expected upload errors use the same Pydantic `ErrorResponse` 
 
 The default upload limit is 20 MiB. Set `IPI_MAX_UPLOAD_BYTES` to change it for a deployment.
 
+### Validation fixtures
+
+The repository includes a pinned official C2PA JPEG fixture under
+[`fixtures/`](fixtures/). Its test expects a signed `c2pa.created` manifest but
+keeps both origin and editing classification as `UNKNOWN`; a credential is
+evidence of provenance data, not automatic proof of camera capture or AI
+generation. See [`fixtures/README.md`](fixtures/README.md) before adding
+real-world vendor samples.
+
 ## Docker
 
 Build and run the API container:
@@ -149,10 +165,12 @@ Install development and UI dependencies, then run the checks locally:
 uv sync --extra dev --extra c2pa --extra ui --extra analysis
 uv run ruff check .
 uv run ruff format --check .
-uv run pytest --cov=app --cov-report=term-missing
+uv run pytest --cov=app --cov-report=term-missing --cov-fail-under=80
 ```
 
-The GitHub Actions workflow runs the same lint, formatting, and test gates on Python 3.12. `uv.lock` is committed so CI and deployments resolve the same dependency graph.
+The GitHub Actions workflow runs the same lint, formatting, coverage, lock-file,
+wheel-build, and Docker-build gates on Python 3.12. `uv.lock` is committed so
+CI and deployments resolve the same dependency graph.
 
 The project also exposes a CLI using the same service and Pydantic result model:
 
@@ -172,6 +190,7 @@ app/
 ├── main.py          FastAPI application
 └── service.py       shared analysis orchestration
 tests/               unit and API contract tests
+fixtures/            traceable C2PA and real-world validation assets
 ui/                  Streamlit interface
 ```
 

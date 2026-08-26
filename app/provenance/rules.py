@@ -1,23 +1,35 @@
-"""Conservative, explainable provenance classification rules."""
+"""Conservative, explainable provenance evidence classification rules."""
 
 from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ..models.result import Assessment, C2PASummary, Confidence, ProvenanceType
+from ..models.result import (
+    Assessment,
+    C2PASummary,
+    Confidence,
+    EditingAssessment,
+    EditingType,
+    OriginAssessment,
+    OriginType,
+)
 
-_AI_MARKERS = (
+_AI_EDIT_MARKERS = (
     "artificial intelligence",
     "ai-generated",
     "ai generated",
     "generative",
     "firefly",
+    "gemini",
+    "sora",
+)
+_AI_GENERATOR_MARKERS = (
     "midjourney",
     "stable diffusion",
     "dall-e",
     "dall·e",
-    "gemini",
-    "sora",
+    "chatgpt image",
+    "imagen",
     "flux",
     "comfyui",
     "automatic1111",
@@ -32,11 +44,128 @@ _TRADITIONAL_EDIT_MARKERS = (
     "darktable",
     "pixelmator",
 )
+_EDIT_ACTION_MARKERS = (
+    "edited",
+    "edit",
+    "placed",
+    "removed",
+    "exported",
+)
+_CREATED_ACTION_MARKERS = ("created", "generated")
 
 
 def _contains_marker(value: str | None, markers: Iterable[str]) -> bool:
     normalized = (value or "").casefold()
     return any(marker in normalized for marker in markers)
+
+
+def _contains_action(actions: list[str], markers: Iterable[str]) -> bool:
+    return any(_contains_marker(action, markers) for action in actions)
+
+
+def _camera_origin(camera: str | None) -> OriginAssessment:
+    if camera:
+        return OriginAssessment(
+            type=OriginType.CAMERA_CAPTURED,
+            confidence=Confidence.MEDIUM,
+            reason=[
+                "Camera capture metadata detected",
+                "Metadata can be copied, rewritten, or retained after editing",
+            ],
+        )
+    return OriginAssessment(
+        type=OriginType.UNKNOWN,
+        confidence=Confidence.LOW,
+        reason=[
+            "No camera-origin metadata was detected",
+            "Missing metadata is not proof that an image is synthetic",
+        ],
+    )
+
+
+def _origin_assessment(
+    *, camera: str | None, software: str | None, c2pa: C2PASummary
+) -> OriginAssessment:
+    if camera:
+        return _camera_origin(camera)
+
+    generator_evidence = _contains_marker(software, _AI_GENERATOR_MARKERS) or _contains_marker(
+        c2pa.claim_generator, _AI_GENERATOR_MARKERS
+    )
+    created_evidence = _contains_action(c2pa.actions, _CREATED_ACTION_MARKERS)
+    if generator_evidence and (not c2pa.present or created_evidence or c2pa.generative_edit):
+        return OriginAssessment(
+            type=OriginType.SYNTHETIC,
+            confidence=Confidence.MEDIUM,
+            reason=[
+                "Known AI generator evidence detected",
+                "No camera-origin metadata was detected",
+                "Source history may be incomplete",
+            ],
+        )
+
+    if c2pa.generative_edit:
+        return OriginAssessment(
+            type=OriginType.UNKNOWN,
+            confidence=Confidence.MEDIUM,
+            reason=[
+                "Generative action detected",
+                "No camera-origin metadata was detected",
+                "The available evidence cannot distinguish generated content from an edited source",
+            ],
+        )
+    return _camera_origin(None)
+
+
+def _editing_assessment(*, software: str | None, c2pa: C2PASummary) -> EditingAssessment:
+    ai_evidence = (
+        c2pa.generative_edit
+        or _contains_marker(software, _AI_EDIT_MARKERS)
+        or _contains_marker(c2pa.claim_generator, _AI_EDIT_MARKERS)
+        or _contains_marker(software, _AI_GENERATOR_MARKERS)
+        or _contains_marker(c2pa.claim_generator, _AI_GENERATOR_MARKERS)
+    )
+    if ai_evidence:
+        return EditingAssessment(
+            type=EditingType.GENERATIVE,
+            confidence=Confidence.HIGH if c2pa.generative_edit else Confidence.MEDIUM,
+            reason=[
+                "Generative editing or AI provenance evidence detected",
+                *(["C2PA generative action detected"] if c2pa.generative_edit else []),
+            ],
+        )
+
+    traditional_evidence = _contains_marker(software, _TRADITIONAL_EDIT_MARKERS)
+    action_evidence = _contains_action(c2pa.actions, _EDIT_ACTION_MARKERS)
+    if traditional_evidence or action_evidence:
+        reasons = []
+        if traditional_evidence:
+            reasons.append("Traditional image-editing software detected")
+        if action_evidence:
+            reasons.append("Non-generative edit action detected in provenance")
+        return EditingAssessment(
+            type=EditingType.TRADITIONAL,
+            confidence=Confidence.HIGH if traditional_evidence else Confidence.MEDIUM,
+            reason=reasons,
+        )
+
+    if c2pa.present:
+        return EditingAssessment(
+            type=EditingType.UNKNOWN,
+            confidence=Confidence.LOW,
+            reason=[
+                "C2PA provenance detected",
+                "No editing action was available to classify",
+            ],
+        )
+    return EditingAssessment(
+        type=EditingType.NONE_DETECTED,
+        confidence=Confidence.LOW,
+        reason=[
+            "No editing provenance was detected",
+            "Missing evidence is not proof that an image was not edited",
+        ],
+    )
 
 
 def classify_provenance(
@@ -45,70 +174,14 @@ def classify_provenance(
     software: str | None,
     c2pa: C2PASummary,
 ) -> Assessment:
-    """Classify evidence without claiming certainty beyond the available data."""
+    """Classify origin and editing evidence independently.
 
-    camera_detected = bool(camera)
-    c2pa_generator = c2pa.claim_generator
-    ai_software = _contains_marker(software, _AI_MARKERS) or _contains_marker(
-        c2pa_generator, _AI_MARKERS
-    )
-    traditional_software = _contains_marker(software, _TRADITIONAL_EDIT_MARKERS)
-    generative_evidence = c2pa.generative_edit or ai_software
-
-    if generative_evidence and camera_detected:
-        reasons = [
-            "Camera capture metadata detected",
-            "AI-related editing or generation evidence detected",
-        ]
-        if c2pa.present:
-            reasons.insert(1, "C2PA provenance detected")
-        if c2pa.generative_edit:
-            reasons.append("Generative editing action detected")
-        return Assessment(
-            type=ProvenanceType.AI_ASSISTED_EDIT,
-            confidence=Confidence.HIGH if c2pa.generative_edit else Confidence.MEDIUM,
-            reason=reasons,
-        )
-
-    if generative_evidence and not camera_detected:
-        reasons = ["AI-related generation evidence detected"]
-        if c2pa.present:
-            reasons.insert(0, "C2PA provenance detected")
-        if c2pa.generative_edit:
-            reasons.append("Generative action detected without camera-origin evidence")
-        return Assessment(
-            type=ProvenanceType.AI_GENERATED,
-            confidence=Confidence.HIGH if c2pa.generative_edit else Confidence.MEDIUM,
-            reason=reasons,
-        )
-
-    if camera_detected and (traditional_software or c2pa.present):
-        reasons = ["Camera capture metadata detected"]
-        if traditional_software:
-            reasons.append("Traditional image-editing software detected")
-        if c2pa.present:
-            reasons.append("C2PA provenance detected without a generative action")
-        return Assessment(
-            type=ProvenanceType.TRADITIONAL_EDIT,
-            confidence=Confidence.HIGH if traditional_software else Confidence.MEDIUM,
-            reason=reasons,
-        )
-
-    if camera_detected:
-        return Assessment(
-            type=ProvenanceType.CAMERA_ORIGINAL,
-            confidence=Confidence.HIGH,
-            reason=[
-                "Camera capture metadata detected",
-                "No AI or editing provenance was detected",
-            ],
-        )
+    Camera metadata is treated as medium-confidence origin evidence rather than
+    proof of an untouched image. Generative actions without a known generator
+    remain origin-unknown because a real source image may have lost its metadata.
+    """
 
     return Assessment(
-        type=ProvenanceType.UNKNOWN,
-        confidence=Confidence.LOW,
-        reason=[
-            "No camera-origin metadata was detected",
-            "No conclusive editing or generation provenance was detected",
-        ],
+        origin=_origin_assessment(camera=camera, software=software, c2pa=c2pa),
+        editing=_editing_assessment(software=software, c2pa=c2pa),
     )

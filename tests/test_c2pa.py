@@ -45,4 +45,5 @@ def test_c2pa_reader_maps_manifest_and_actions(monkeypatch) -> None:
     assert result.present is True
     assert result.valid is True
     assert result.claim_generator == "Example Editor"
+    assert result.actions == ["generative edit"]
     assert result.generative_edit is True

@@ -20,9 +20,14 @@ if uploaded is not None and st.button("Analyze", type="primary"):
     except Exception as exc:  # Streamlit should show a useful message rather than a traceback.
         st.error(str(exc))
     else:
-        st.subheader(result.assessment.type.value.replace("_", " ").title())
-        st.write(f"Confidence: **{result.assessment.confidence.value}**")
-        st.write("; ".join(result.assessment.reason))
+        st.subheader("Provenance assessment")
+        for label, evidence in (
+            ("Origin", result.assessment.origin),
+            ("Editing", result.assessment.editing),
+        ):
+            st.markdown(f"**{label}:** {evidence.type.value.replace('_', ' ').title()}")
+            st.write(f"Confidence: **{evidence.confidence.value}**")
+            st.write("; ".join(evidence.reason))
         st.json(result.model_dump(mode="json"))
 
 st.divider()

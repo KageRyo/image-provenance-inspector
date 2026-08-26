@@ -57,6 +57,15 @@ def _actions_from_manifest(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     return actions
 
 
+def _action_names(manifest: dict[str, Any]) -> list[str]:
+    names: list[str] = []
+    for action in _actions_from_manifest(manifest):
+        name = action.get("action")
+        if name is not None and str(name).strip():
+            names.append(str(name).strip())
+    return names
+
+
 def _has_generative_evidence(manifest: dict[str, Any], claim_generator: str | None) -> bool:
     evidence = json.dumps(
         {"actions": _actions_from_manifest(manifest), "claim_generator": claim_generator},
@@ -69,7 +78,13 @@ def inspect_c2pa(data: bytes, mime_type: str) -> C2PASummary:
     """Return a safe summary; absent/unsupported credentials are not fatal."""
 
     if Reader is None:
-        return C2PASummary(present=False, valid=None, claim_generator=None, generative_edit=False)
+        return C2PASummary(
+            present=False,
+            valid=None,
+            claim_generator=None,
+            actions=[],
+            generative_edit=False,
+        )
 
     try:
         with Reader(mime_type, BytesIO(data)) as reader:
@@ -79,7 +94,11 @@ def inspect_c2pa(data: bytes, mime_type: str) -> C2PASummary:
             manifest = manifests.get(active_label) if isinstance(manifests, dict) else None
             if not isinstance(manifest, dict):
                 return C2PASummary(
-                    present=False, valid=None, claim_generator=None, generative_edit=False
+                    present=False,
+                    valid=None,
+                    claim_generator=None,
+                    actions=[],
+                    generative_edit=False,
                 )
             claim_generator_value = manifest.get("claim_generator")
             claim_generator = (
@@ -90,8 +109,15 @@ def inspect_c2pa(data: bytes, mime_type: str) -> C2PASummary:
                 present=True,
                 valid=_validation_to_bool(reader.get_validation_state()),
                 claim_generator=claim_generator,
+                actions=_action_names(manifest),
                 generative_edit=_has_generative_evidence(manifest, claim_generator),
             )
     except Exception as exc:  # native bindings expose several exception classes by version
         logger.debug("Unable to read C2PA manifest: %s", exc)
-        return C2PASummary(present=False, valid=None, claim_generator=None, generative_edit=False)
+        return C2PASummary(
+            present=False,
+            valid=None,
+            claim_generator=None,
+            actions=[],
+            generative_edit=False,
+        )

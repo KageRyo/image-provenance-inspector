@@ -16,11 +16,16 @@ class SchemaModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class ProvenanceType(StrEnum):
-    CAMERA_ORIGINAL = "CAMERA_ORIGINAL"
-    TRADITIONAL_EDIT = "TRADITIONAL_EDIT"
-    AI_ASSISTED_EDIT = "AI_ASSISTED_EDIT"
-    AI_GENERATED = "AI_GENERATED"
+class OriginType(StrEnum):
+    CAMERA_CAPTURED = "CAMERA_CAPTURED"
+    SYNTHETIC = "SYNTHETIC"
+    UNKNOWN = "UNKNOWN"
+
+
+class EditingType(StrEnum):
+    NONE_DETECTED = "NONE_DETECTED"
+    TRADITIONAL = "TRADITIONAL"
+    GENERATIVE = "GENERATIVE"
     UNKNOWN = "UNKNOWN"
 
 
@@ -54,13 +59,25 @@ class C2PASummary(SchemaModel):
     present: bool
     valid: bool | None
     claim_generator: str | None = Field(default=None, max_length=512)
+    actions: list[str] = Field(default_factory=list, max_length=50)
     generative_edit: bool
 
 
-class Assessment(SchemaModel):
-    type: ProvenanceType
+class OriginAssessment(SchemaModel):
+    type: OriginType
     confidence: Confidence
     reason: list[str] = Field(min_length=1, max_length=20)
+
+
+class EditingAssessment(SchemaModel):
+    type: EditingType
+    confidence: Confidence
+    reason: list[str] = Field(min_length=1, max_length=20)
+
+
+class Assessment(SchemaModel):
+    origin: OriginAssessment
+    editing: EditingAssessment
 
 
 class AnalysisResult(SchemaModel):

@@ -21,9 +21,21 @@ def test_analysis_contract_rejects_unknown_fields() -> None:
             "present": False,
             "valid": None,
             "claim_generator": None,
+            "actions": [],
             "generative_edit": False,
         },
-        "assessment": {"type": "UNKNOWN", "confidence": "low", "reason": ["No evidence"]},
+        "assessment": {
+            "origin": {
+                "type": "UNKNOWN",
+                "confidence": "low",
+                "reason": ["No origin evidence"],
+            },
+            "editing": {
+                "type": "NONE_DETECTED",
+                "confidence": "low",
+                "reason": ["No editing evidence"],
+            },
+        },
         "unexpected": True,
     }
     with pytest.raises(ValidationError):

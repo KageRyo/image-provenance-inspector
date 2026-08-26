@@ -20,7 +20,8 @@ def test_analyze_returns_pydantic_contract(jpeg_bytes: bytes) -> None:
     assert set(payload) == {"file", "capture", "metadata", "c2pa", "assessment"}
     assert payload["file"]["format"] == "JPEG"
     assert payload["c2pa"]["present"] is False
-    assert payload["assessment"]["type"] == "UNKNOWN"
+    assert payload["assessment"]["origin"]["type"] == "UNKNOWN"
+    assert payload["assessment"]["editing"]["type"] == "NONE_DETECTED"
 
 
 def test_compare_returns_metrics_and_difference(
