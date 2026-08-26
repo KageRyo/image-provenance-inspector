@@ -95,10 +95,7 @@ ipython_config.py
 # Pipfile.lock
 
 # UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-# uv.lock
+#   Applications commit uv.lock so CI and deployments use the same resolved versions.
 
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
@@ -216,3 +213,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local application output
+reports/
