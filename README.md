@@ -214,18 +214,20 @@ Uploaded content may contain sensitive metadata such as GPS coordinates. Run the
 
 ## Responsible use
 
-Use this project only with images and metadata that you are authorized to
-inspect. Do not use it to facilitate unlawful activity, privacy violations,
-fraud, copyright infringement, or attempts to evade platform safeguards.
-
-If an image is AI-generated or AI-edited, follow the applicable laws, license
-terms, disclosure requirements, and content policies of the platform where it
-is published. Do not remove, falsify, or bypass C2PA credentials, labels,
-watermarks, or other provenance signals.
-
-This project provides technical evidence, not a legal determination. You are
-responsible for obtaining the rights and permissions needed for image use and
-for complying with applicable laws and platform policies.
+> ⚠️ **Responsible use**
+>
+> Use this project only with images and metadata that you are authorized to
+> inspect. Do not use it to facilitate unlawful activity, privacy violations,
+> fraud, copyright infringement, or attempts to evade platform safeguards.
+>
+> If an image is AI-generated or AI-edited, follow the applicable laws, license
+> terms, disclosure requirements, and content policies of the platform where it
+> is published. Do not remove, falsify, or bypass C2PA credentials, labels,
+> watermarks, or other provenance signals.
+>
+> This project provides technical evidence, not a legal determination. You are
+> responsible for obtaining the rights and permissions needed for image use
+> and for complying with applicable laws and platform policies.
 
 ## License
 
