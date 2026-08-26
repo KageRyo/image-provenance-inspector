@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.models.result import AnalysisResult, CompareResult, ErrorResponse
+from app.models.result import AnalysisResult, CompareResult, ErrorResponse, SanitizeResult
 
 client = TestClient(app)
 
@@ -61,3 +61,30 @@ def test_missing_upload_uses_error_schema() -> None:
     assert response.status_code == 422
     ErrorResponse.model_validate(response.json())
     assert response.json()["code"] == "validation_error"
+
+
+def test_sanitize_returns_report_and_encoded_image(jpeg_bytes: bytes) -> None:
+    response = client.post(
+        "/api/v1/sanitize",
+        files={"image": ("sample.jpg", jpeg_bytes, "image/jpeg")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    result = SanitizeResult.model_validate(payload)
+    assert result.image.mime_type == "image/jpeg"
+    assert result.report.c2pa_preserved is True
+    assert result.report.sanitized is False
+    assert result.output.sha256 == result.original.sha256
+
+
+def test_sanitize_accepts_selected_privacy_groups(jpeg_bytes: bytes) -> None:
+    response = client.post(
+        "/api/v1/sanitize",
+        data={"remove": "gps"},
+        files={"image": ("sample.jpg", jpeg_bytes, "image/jpeg")},
+    )
+
+    assert response.status_code == 200
+    result = SanitizeResult.model_validate(response.json())
+    assert result.report.sanitized is False

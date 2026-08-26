@@ -129,6 +129,40 @@ curl -X POST http://127.0.0.1:8000/api/v1/compare \
 
 The response includes `ssim` (0–1), `phash_distance`, `changed_area_ratio` (0–1), and a base64-encoded PNG difference mask.
 
+### Privacy-sanitized copy
+
+Create a local-use copy with selected privacy-sensitive EXIF fields removed:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/sanitize \
+  -F "image=@photo.jpg" \
+  -F "remove=gps" \
+  -F "remove=device-identifiers" \
+  -F "remove=owner" \
+  -F "remove=comments" \
+  -F "remove=private-thumbnails" \
+  -F "remove=timestamps"
+```
+
+If `remove` is omitted, all supported privacy groups are selected. The endpoint
+returns the sanitized image as base64 together with a report of removed fields,
+preserved metadata, C2PA state, and pixel comparison metrics.
+
+The sanitizer is intentionally provenance-preserving: it does not remove or
+rewrite C2PA, XMP, IPTC, software fields, or other provenance-bearing blocks.
+When C2PA Content Credentials are detected, the input is returned unchanged so
+that a signed asset is not silently invalidated. This is a privacy metadata
+utility, not an AI-label remover.
+
+The same operation is available from the CLI:
+
+```bash
+uv run image-provenance-inspector sanitize photo.jpg \
+  --remove gps \
+  --remove device-identifiers \
+  --output photo.sanitized.jpg
+```
+
 All validation and expected upload errors use the same Pydantic `ErrorResponse` shape:
 
 ```json
@@ -193,7 +227,7 @@ app/
 ├── analyzers/       image, metadata, C2PA, and comparison readers
 ├── models/          public Pydantic schemas
 ├── provenance/      explainable classification rules
-├── cli.py           command-line entry point
+├── cli.py           command-line entry point and privacy sanitizer
 ├── main.py          FastAPI application
 └── service.py       shared analysis orchestration
 tests/               unit and API contract tests
@@ -210,7 +244,7 @@ This project inspects, validates, explains, and compares evidence. It deliberate
 - guarantee that an image is AI-generated or camera-original;
 - infer provenance from pixels alone.
 
-Uploaded content may contain sensitive metadata such as GPS coordinates. Run the service locally or review and sanitize metadata before sending images to a hosted deployment.
+Uploaded content may contain sensitive metadata such as GPS coordinates. Run the service locally or review and sanitize metadata before sending images to a hosted deployment. The v0.2 sanitizer removes selected privacy EXIF fields while preserving provenance-bearing blocks.
 
 ## Responsible use
 

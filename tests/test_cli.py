@@ -57,3 +57,21 @@ def test_cli_main_serializes_result(monkeypatch, capsys) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload["file"]["sha256"]
     assert payload["c2pa"]["actions"] == ["c2pa.created"]
+
+
+def test_installed_cli_sanitizes_to_requested_output(tmp_path: Path) -> None:
+    output_path = tmp_path / "sanitized.jpg"
+
+    completed = _run_installed_cli(
+        "sanitize",
+        str(FIXTURE_PATH),
+        "--remove",
+        "gps",
+        "--output",
+        str(output_path),
+    )
+
+    payload = json.loads(completed.stdout)
+    assert output_path.is_file()
+    assert payload["report"]["c2pa_present"] is True
+    assert payload["report"]["sanitized"] is False

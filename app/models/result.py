@@ -35,6 +35,17 @@ class Confidence(StrEnum):
     HIGH = "high"
 
 
+class SanitizationGroup(StrEnum):
+    """Privacy metadata groups that may be removed without touching provenance."""
+
+    GPS = "gps"
+    DEVICE_IDENTIFIERS = "device-identifiers"
+    OWNER = "owner"
+    COMMENTS = "comments"
+    PRIVATE_THUMBNAILS = "private-thumbnails"
+    TIMESTAMPS = "timestamps"
+
+
 class ImageFileInfo(SchemaModel):
     format: str = Field(min_length=1, max_length=32)
     width: int = Field(ge=1)
@@ -104,6 +115,29 @@ class CompareResult(SchemaModel):
     edited: ImageFileInfo
     metrics: CompareMetrics
     difference: DifferenceImage
+
+
+class EncodedImage(SchemaModel):
+    mime_type: str = Field(pattern=r"^image/[a-z0-9.+-]+$")
+    data_base64: str = Field(min_length=1)
+
+
+class SanitizationReport(SchemaModel):
+    sanitized: bool
+    c2pa_present: bool
+    c2pa_preserved: bool
+    pixel_content_changed: bool
+    removed: list[str] = Field(default_factory=list, max_length=100)
+    preserved: list[str] = Field(default_factory=list, max_length=100)
+    warnings: list[str] = Field(default_factory=list, max_length=20)
+    comparison: CompareMetrics | None = None
+
+
+class SanitizeResult(SchemaModel):
+    original: ImageFileInfo
+    output: ImageFileInfo
+    image: EncodedImage
+    report: SanitizationReport
 
 
 class ErrorDetail(SchemaModel):

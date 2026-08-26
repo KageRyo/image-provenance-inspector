@@ -5,13 +5,14 @@ from __future__ import annotations
 import os
 from typing import Annotated
 
-from fastapi import FastAPI, File, Request, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .analyzers.comparison import compare_images
 from .analyzers.image import inspect_image
+from .analyzers.sanitizer import build_sanitize_payload, sanitize_image
 from .api.analyze import service
 from .errors import AnalysisError
 from .models.result import (
@@ -20,6 +21,8 @@ from .models.result import (
     ErrorDetail,
     ErrorResponse,
     HealthResponse,
+    SanitizationGroup,
+    SanitizeResult,
 )
 
 MAX_UPLOAD_BYTES = int(os.getenv("IPI_MAX_UPLOAD_BYTES", str(20 * 1024 * 1024)))
@@ -27,7 +30,7 @@ MAX_UPLOAD_BYTES = int(os.getenv("IPI_MAX_UPLOAD_BYTES", str(20 * 1024 * 1024)))
 app = FastAPI(
     title="Image Provenance Inspector",
     description="Inspect image metadata, C2PA Content Credentials, and editing provenance.",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 
@@ -134,4 +137,33 @@ async def compare(
         edited=edited_info,
         metrics=metrics,
         difference=difference,
+    )
+
+
+@app.post(
+    "/api/v1/sanitize",
+    response_model=SanitizeResult,
+    responses={
+        400: {"model": ErrorResponse},
+        413: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+    },
+    tags=["privacy"],
+    summary="Remove selected privacy metadata while preserving provenance",
+)
+async def sanitize(
+    image: Annotated[UploadFile, File(description="Image to sanitize")],
+    remove: Annotated[
+        list[SanitizationGroup] | None,
+        Form(description="Privacy groups to remove; omit to remove all supported groups"),
+    ] = None,
+) -> SanitizeResult:
+    data = await _read_upload(image)
+    output_data, report = sanitize_image(data, remove)
+    original_info, output_info, encoded = build_sanitize_payload(data, output_data)
+    return SanitizeResult(
+        original=original_info,
+        output=output_info,
+        image=encoded,
+        report=report,
     )

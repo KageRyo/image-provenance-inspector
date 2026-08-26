@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "image-provenance-inspector"
-version = "0.1.0"
-description = "Inspect image metadata, C2PA Content Credentials, and editing provenance."
+version = "0.2.0"
+description = "Inspect image provenance and create privacy-sanitized copies without removing provenance."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12,<3.13"
