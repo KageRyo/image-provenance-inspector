@@ -127,7 +127,10 @@ def compare_images(
         edited_rgb = _rgb_array(edited_for_compare_image)
         original_gray = cv2.cvtColor(original_rgb, cv2.COLOR_RGB2GRAY)
         edited_gray = cv2.cvtColor(edited_rgb, cv2.COLOR_RGB2GRAY)
-        ssim = float(structural_similarity(original_gray, edited_gray, data_range=255))
+        if min(original_gray.shape) < 7:
+            ssim = _fallback_ssim(original_gray.ravel().tolist(), edited_gray.ravel().tolist())
+        else:
+            ssim = float(structural_similarity(original_gray, edited_gray, data_range=255))
         pixel_difference = cv2.absdiff(original_rgb, edited_rgb)
         channel_difference = np.max(pixel_difference, axis=2)
         mask = np.where(channel_difference > 16, 255, 0).astype(np.uint8)

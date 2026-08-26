@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "id": "official-c2pa/created-jpeg",
+      "path": "fixtures/official-c2pa/C.jpg",
+      "source_url": "https://github.com/contentauth/c2pa-python/blob/252cbeed40017a9e0d872973849c622b7ff215d4/tests/fixtures/C.jpg",
+      "source_commit": "252cbeed40017a9e0d872973849c622b7ff215d4",
+      "license": "MIT (upstream c2pa-python fixture)",
+      "sha256": "4cbac1af485155f878d12a610da851c2938f2ce886189c61d9da7a0a43bd00b5",
+      "expected": {
+        "c2pa_present": true,
+        "actions": ["c2pa.created"],
+        "origin": "UNKNOWN",
+        "editing": "UNKNOWN"
+      }
+    }
+  ]
+}

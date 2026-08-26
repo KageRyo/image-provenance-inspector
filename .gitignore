@@ -216,3 +216,6 @@ __marimo__/
 
 # Local application output
 reports/
+
+# Local/private validation assets
+fixtures/local/
