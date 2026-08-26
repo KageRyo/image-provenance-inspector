@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "image-provenance-inspector"
-version = "0.2.0"
+version = "0.1.0"
 description = "Inspect image metadata, C2PA Content Credentials, and editing provenance."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -45,6 +45,11 @@ c2pa = [
 ui = [
   "streamlit>=1.39,<2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/KageRyo/image-provenance-inspector"
+Repository = "https://github.com/KageRyo/image-provenance-inspector"
+Issues = "https://github.com/KageRyo/image-provenance-inspector/issues"
 
 [project.scripts]
 image-provenance-inspector = "app.cli:main"
