@@ -30,7 +30,7 @@ MAX_UPLOAD_BYTES = int(os.getenv("IPI_MAX_UPLOAD_BYTES", str(20 * 1024 * 1024)))
 app = FastAPI(
     title="Image Provenance Inspector",
     description="Inspect image metadata, C2PA Content Credentials, and editing provenance.",
-    version="0.2.0",
+    version="0.2.1",
 )
 
 
