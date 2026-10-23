@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import struct
 from io import BytesIO
 from pathlib import Path
@@ -117,4 +116,3 @@ def test_sanitizer_supports_png_and_webp_without_reencoding_pixels() -> None:
         assert report.pixel_content_changed is False
         assert report.comparison is not None
         assert report.comparison.changed_area_ratio == 0
-        assert base64.b64encode(output)
