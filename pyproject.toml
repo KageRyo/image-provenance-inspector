@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "image-provenance-inspector"
-version = "0.2.0"
+version = "0.2.1"
 description = "Inspect image provenance and create privacy-sanitized copies without removing provenance."
 readme = "README.md"
 license = { file = "LICENSE" }
